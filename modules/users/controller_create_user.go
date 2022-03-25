@@ -2,6 +2,7 @@ package users
 
 import (
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,9 +26,63 @@ func (mo *Module) AddCreateUserController() {
 		body := &createUserRequestBody{}
 
 		if err := c.ShouldBindJSON(body); err != nil {
-			exception := common.BadRequestException()
+			common.AbortWithException(c, common.BadRequestException())
 
-			common.AbortWithException(c, exception)
+			return
+		}
+
+		username := body.Username
+
+		if matched, _ := regexp.MatchString("[ㄱ-ㅎ]", username); matched {
+			common.AbortWithException(c, DisallowKoreanCharacter())
+
+			return
+		}
+
+		if matched, _ := regexp.MatchString("[\\{\\}\\[\\]\\/?.,;:|\\)*~`!^\\-_+<>@\\#$%&\\\\\\=\\(\\'\"]", username); matched {
+			common.AbortWithException(c, DisallowSpecialCharacter())
+
+			return
+		}
+
+		if matched, _ := regexp.MatchString("\\s", username); matched {
+			common.AbortWithException(c, DisallowSpaceCharacterForUsername())
+
+			return
+		}
+
+		koreanLength := len(regexp.MustCompile("[가-힣]").FindAllString(username, -1))
+
+		otherLength := len(regexp.MustCompile("[A-Za-z0-9]").FindAllString(username, -1))
+
+		if koreanLength*2+otherLength < 4 {
+			common.AbortWithException(c, TooShortUsername())
+
+			return
+		}
+
+		if koreanLength*2+otherLength > 16 {
+			common.AbortWithException(c, TooLongUsername())
+
+			return
+		}
+
+		password := body.Password
+
+		if len(password) < 8 {
+			common.AbortWithException(c, TooShortPassword())
+
+			return
+		}
+
+		if len(password) > 24 {
+			common.AbortWithException(c, TooLongPassword())
+
+			return
+		}
+
+		if matched, _ := regexp.MatchString("\\s", password); matched {
+			common.AbortWithException(c, DisAllowSpaceCharacterForPassword())
 
 			return
 		}
@@ -35,9 +90,7 @@ func (mo *Module) AddCreateUserController() {
 		result := &models.User{}
 
 		if err := mo.DB.Where("username = ?", body.Username).First(result).Error; err == nil {
-			exception := ConflictUsernameException()
-
-			common.AbortWithException(c, exception)
+			common.AbortWithException(c, ConflictUsernameException())
 
 			return
 		}
