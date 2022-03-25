@@ -7,34 +7,45 @@ import (
 
 type User struct {
 	gorm.Model
-	Username string
-	Password string
+	Username     string
+	Password     string
+	RefreshToken string
 }
 
-func UsernameExists(db *gorm.DB, username string) bool {
-	err := db.Where("username = ?", username).First(&User{}).Error
+func UsernameExists(db *gorm.DB, username *entities.Username) bool {
+	err := db.Where("username = ?", username.ToString()).First(&User{}).Error
 
 	return err == nil
 }
 
-func SaveUser(db *gorm.DB, username string, password string) {
+func PutUser(db *gorm.DB, user *entities.User) {
+	if user.Id() != 0 {
+		db.Save(&User{
+			Username:     user.Username().ToString(),
+			Password:     user.Password().ToString(),
+			RefreshToken: user.RefreshTOken(),
+		})
+	}
+
 	db.Create(&User{
-		Username: username,
-		Password: password,
+		Username:     user.Username().ToString(),
+		Password:     user.Password().ToString(),
+		RefreshToken: user.RefreshTOken(),
 	})
 }
 
-func FindUserByUsername(db *gorm.DB, username string) (*entities.User, error) {
+func FindUserByUsername(db *gorm.DB, username *entities.Username) (*entities.User, error) {
 	result := &User{}
 
-	if err := db.Where("username = ?", username).First(result).Error; err != nil {
+	if err := db.Where("username = ?", username.ToString()).First(result).Error; err != nil {
 		return &entities.User{}, err
 	}
 
-	return &entities.User{
-		Id:        result.ID,
-		Username:  &entities.Username{Value: result.Username},
-		Password:  &entities.Password{Value: result.Password},
-		CreatedAt: result.CreatedAt,
-	}, nil
+	return entities.NewUser(
+		result.ID,
+		entities.NewUsername(result.Username),
+		entities.NewPassword(result.Password),
+		"",
+		result.CreatedAt,
+	), nil
 }

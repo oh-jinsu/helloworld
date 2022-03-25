@@ -31,7 +31,7 @@ func (mo *Module) AddSignUpUseCase() {
 			return
 		}
 
-		username := &entities.Username{Value: body.Username}
+		username := entities.NewUsername(body.Username)
 
 		if username.HasKoreanConsonants() {
 			common.AbortWithException(c, KoreanConsonantsException())
@@ -63,7 +63,7 @@ func (mo *Module) AddSignUpUseCase() {
 			return
 		}
 
-		password := &entities.Password{Value: body.Password}
+		password := entities.NewPassword(body.Password)
 
 		if password.HasSpaceCharacters() {
 			common.AbortWithException(c, SpaceCharacterForPasswordException())
@@ -83,15 +83,17 @@ func (mo *Module) AddSignUpUseCase() {
 			return
 		}
 
-		if models.UsernameExists(mo.Db, username.Value) {
+		if models.UsernameExists(mo.Db, username) {
 			common.AbortWithException(c, ConflictUsernameException())
 
 			return
 		}
 
-		models.SaveUser(mo.Db, username.Value, password.Value)
+		user := entities.NewUserByUsernameAndPassword(username, password)
 
-		user, err := models.FindUserByUsername(mo.Db, username.Value)
+		models.PutUser(mo.Db, user)
+
+		result, err := models.FindUserByUsername(mo.Db, username)
 
 		if err != nil {
 			common.AbortWithException(c, FailedToFindUserException())
@@ -100,9 +102,9 @@ func (mo *Module) AddSignUpUseCase() {
 		}
 
 		c.JSON(http.StatusCreated, &SignUpResponseBody{
-			Id:        user.Id,
-			Username:  user.Username.Value,
-			CreatedAt: user.CreatedAt,
+			Id:        result.Id(),
+			Username:  result.Username().ToString(),
+			CreatedAt: result.CreatedAt(),
 		})
 	})
 }

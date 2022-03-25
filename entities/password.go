@@ -3,23 +3,31 @@ package entities
 import "regexp"
 
 type Password struct {
-	Value string
+	value string
+}
+
+func NewPassword(value string) *Password {
+	return &Password{value}
+}
+
+func (e *Password) ToString() string {
+	return e.value
 }
 
 func (e *Password) Equals(other *Password) bool {
-	return e.Value == other.Value
+	return e.value == other.value
 }
 
 func (e *Password) HasSpaceCharacters() bool {
-	result, _ := regexp.MatchString("\\s", e.Value)
+	result, _ := regexp.MatchString("\\s", e.value)
 
 	return result
 }
 
 func (e *Password) IsTooShort() bool {
-	return len([]byte(e.Value)) < 8
+	return len([]byte(e.value)) < 8
 }
 
 func (e *Password) IsTooLong() bool {
-	return len([]byte(e.Value)) > 24
+	return len([]byte(e.value)) > 24
 }

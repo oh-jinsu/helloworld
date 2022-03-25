@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +32,9 @@ func (mo *Module) AddSignInUseCase() {
 			return
 		}
 
-		user, err := models.FindUserByUsername(mo.Db, body.Username)
+		username := entities.NewUsername(body.Username)
+
+		user, err := models.FindUserByUsername(mo.Db, username)
 
 		if err != nil {
 			common.AbortWithException(c, UserNotFoundException())
@@ -39,15 +42,17 @@ func (mo *Module) AddSignInUseCase() {
 			return
 		}
 
-		password := &entities.Password{Value: body.Password}
+		password := entities.NewPassword(body.Password)
 
-		if !password.Equals(user.Password) {
+		if !password.Equals(user.Password()) {
 			common.AbortWithException(c, PasswordNotMatchedException())
 
 			return
 		}
 
-		accessToken, err := providers.IssueAccessToken(user.Id, time.Minute*30)
+		accessTokenClaims := entities.NewClaims(user.Id(), os.Getenv("JWT_ISSUER"), time.Now().Add(time.Minute*30))
+
+		accessToken, err := providers.IssueAccessToken(accessTokenClaims)
 
 		if err != nil {
 			common.AbortWithException(c, FailedToIssueAccessTokenException())
@@ -55,13 +60,19 @@ func (mo *Module) AddSignInUseCase() {
 			return
 		}
 
-		refreshToken, err := providers.IssueRefreshToken(user.Id, time.Hour*24*365)
+		refreshTokenClaims := entities.NewClaims(user.Id(), os.Getenv("JWT_ISSUER"), time.Now().Add(time.Hour*24*365))
+
+		refreshToken, err := providers.IssueRefreshToken(refreshTokenClaims)
 
 		if err != nil {
 			common.AbortWithException(c, FailedToIssueRefreshTokenException())
 
 			return
 		}
+
+		user.UpdateRefreshToken(refreshToken)
+
+		models.PutUser(mo.Db, user)
 
 		c.JSON(http.StatusCreated, &SignInUseCaseResponseBody{
 			AccessToken:  accessToken,
