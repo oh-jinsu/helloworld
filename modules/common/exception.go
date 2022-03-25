@@ -14,7 +14,7 @@ type exception struct {
 	message string
 }
 
-func NewException(status int, code int, message string) Exception {
+func NewError(status int, code int, message string) Exception {
 	return &exception{status, code, message}
 }
 

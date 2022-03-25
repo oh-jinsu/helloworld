@@ -34,19 +34,19 @@ func (mo *Module) AddCreateUserController() {
 		username := body.Username
 
 		if matched, _ := regexp.MatchString("[ㄱ-ㅎ]", username); matched {
-			common.AbortWithException(c, DisallowKoreanCharacter())
+			common.AbortWithException(c, KoreanCharacterException())
 
 			return
 		}
 
 		if matched, _ := regexp.MatchString("[\\{\\}\\[\\]\\/?.,;:|\\)*~`!^\\-_+<>@\\#$%&\\\\\\=\\(\\'\"]", username); matched {
-			common.AbortWithException(c, DisallowSpecialCharacter())
+			common.AbortWithException(c, SpecialCharacterException())
 
 			return
 		}
 
 		if matched, _ := regexp.MatchString("\\s", username); matched {
-			common.AbortWithException(c, DisallowSpaceCharacterForUsername())
+			common.AbortWithException(c, SpaceCharacterForUsernameException())
 
 			return
 		}
@@ -56,13 +56,13 @@ func (mo *Module) AddCreateUserController() {
 		otherLength := len(regexp.MustCompile("[A-Za-z0-9]").FindAllString(username, -1))
 
 		if koreanLength*2+otherLength < 4 {
-			common.AbortWithException(c, TooShortUsername())
+			common.AbortWithException(c, TooShortUsernameException())
 
 			return
 		}
 
 		if koreanLength*2+otherLength > 16 {
-			common.AbortWithException(c, TooLongUsername())
+			common.AbortWithException(c, TooLongUsernameException())
 
 			return
 		}
@@ -70,19 +70,19 @@ func (mo *Module) AddCreateUserController() {
 		password := body.Password
 
 		if len(password) < 8 {
-			common.AbortWithException(c, TooShortPassword())
+			common.AbortWithException(c, TooShortPasswordException())
 
 			return
 		}
 
 		if len(password) > 24 {
-			common.AbortWithException(c, TooLongPassword())
+			common.AbortWithException(c, TooLongPasswordException())
 
 			return
 		}
 
 		if matched, _ := regexp.MatchString("\\s", password); matched {
-			common.AbortWithException(c, DisAllowSpaceCharacterForPassword())
+			common.AbortWithException(c, SpaceCharacterForPasswordException())
 
 			return
 		}
