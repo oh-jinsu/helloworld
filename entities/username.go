@@ -6,10 +6,6 @@ type Username struct {
 	Value string
 }
 
-func (e *Username) ToString() string {
-	return e.Value
-}
-
 func (e *Username) HasKoreanConsonants() bool {
 	result, _ := regexp.MatchString("[ㄱ-ㅎ]", e.Value)
 

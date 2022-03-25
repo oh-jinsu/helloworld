@@ -6,10 +6,6 @@ type Password struct {
 	Value string
 }
 
-func (e *Password) ToString() string {
-	return e.Value
-}
-
 func (e *Password) Equals(other *Password) bool {
 	return e.Value == other.Value
 }

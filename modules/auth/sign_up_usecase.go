@@ -83,17 +83,15 @@ func (mo *Module) AddSignUpUseCase() {
 			return
 		}
 
-		if models.UsernameExists(mo.Db, username) {
+		if models.UsernameExists(mo.Db, username.Value) {
 			common.AbortWithException(c, ConflictUsernameException())
 
 			return
 		}
 
-		user := &entities.User{Username: username, Password: password}
+		models.SaveUser(mo.Db, username.Value, password.Value)
 
-		models.SaveUser(mo.Db, user)
-
-		err := models.FindUser(mo.Db, user)
+		user, err := models.FindUserByUsername(mo.Db, username.Value)
 
 		if err != nil {
 			common.AbortWithException(c, FailedToFindUserException())
@@ -103,7 +101,7 @@ func (mo *Module) AddSignUpUseCase() {
 
 		c.JSON(http.StatusCreated, &SignUpResponseBody{
 			Id:        user.Id,
-			Username:  user.Username.ToString(),
+			Username:  user.Username.Value,
 			CreatedAt: user.CreatedAt,
 		})
 	})

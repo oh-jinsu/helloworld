@@ -31,11 +31,7 @@ func (mo *Module) AddSignInUseCase() {
 			return
 		}
 
-		username := &entities.Username{Value: body.Username}
-
-		user := &entities.User{Username: username}
-
-		err := models.FindUser(mo.Db, user)
+		user, err := models.FindUserByUsername(mo.Db, body.Username)
 
 		if err != nil {
 			common.AbortWithException(c, UserNotFoundException())

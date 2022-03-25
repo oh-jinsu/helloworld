@@ -11,31 +11,30 @@ type User struct {
 	Password string
 }
 
-func UsernameExists(db *gorm.DB, username *entities.Username) bool {
-	err := db.Where("username = ?", username.ToString()).First(&User{}).Error
+func UsernameExists(db *gorm.DB, username string) bool {
+	err := db.Where("username = ?", username).First(&User{}).Error
 
 	return err == nil
 }
 
-func SaveUser(db *gorm.DB, entity *entities.User) {
+func SaveUser(db *gorm.DB, username string, password string) {
 	db.Create(&User{
-		Username: entity.Username.ToString(),
-		Password: entity.Password.ToString(),
+		Username: username,
+		Password: password,
 	})
 }
 
-func FindUser(db *gorm.DB, user *entities.User) error {
+func FindUserByUsername(db *gorm.DB, username string) (*entities.User, error) {
 	result := &User{}
 
-	if err := db.Where("username = ?", user.Username.ToString()).First(result).Error; err != nil {
-		return err
+	if err := db.Where("username = ?", username).First(result).Error; err != nil {
+		return &entities.User{}, err
 	}
 
-	user.Id = result.ID
-
-	user.Username = &entities.Username{Value: result.Username}
-	user.Password = &entities.Password{Value: result.Password}
-	user.CreatedAt = result.CreatedAt
-
-	return nil
+	return &entities.User{
+		Id:        result.ID,
+		Username:  &entities.Username{Value: result.Username},
+		Password:  &entities.Password{Value: result.Password},
+		CreatedAt: result.CreatedAt,
+	}, nil
 }
