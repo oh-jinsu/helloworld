@@ -36,7 +36,7 @@ func NewCreateUserTestClient(testDB *TestDB) *TestClient {
 		DB:     testDB.instance,
 	}
 
-	module.AddCreateUserController()
+	module.AddCreateUserUseCase()
 
 	client := CreateTestClient(router)
 

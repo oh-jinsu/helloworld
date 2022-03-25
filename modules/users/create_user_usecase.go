@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/oh-jinsu/helloworld/entities"
 	"github.com/oh-jinsu/helloworld/modules/common"
+	"github.com/oh-jinsu/helloworld/repositories"
 )
 
 type createUserRequestBody struct {
@@ -20,7 +21,7 @@ type CreateUserResponseBody struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func (mo *Module) AddCreateUserController() {
+func (mo *Module) AddCreateUserUseCase() {
 	mo.Router.POST("", func(c *gin.Context) {
 		body := &createUserRequestBody{}
 
@@ -82,7 +83,7 @@ func (mo *Module) AddCreateUserController() {
 			return
 		}
 
-		if usernameExists(mo.DB, username) {
+		if repositories.UsernameExists(mo.DB, username) {
 			common.AbortWithException(c, ConflictUsernameException())
 
 			return
@@ -90,7 +91,9 @@ func (mo *Module) AddCreateUserController() {
 
 		user := entities.NewUser(username, password)
 
-		result := saveUser(mo.DB, user)
+		repositories.SaveUser(mo.DB, user)
+
+		result := repositories.FindUserByUsername(mo.DB, username)
 
 		c.JSON(http.StatusCreated, &CreateUserResponseBody{
 			Id:        result.Id(),

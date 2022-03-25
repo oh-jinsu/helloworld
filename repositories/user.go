@@ -1,4 +1,4 @@
-package users
+package repositories
 
 import (
 	"github.com/oh-jinsu/helloworld/entities"
@@ -6,21 +6,23 @@ import (
 	"gorm.io/gorm"
 )
 
-func usernameExists(db *gorm.DB, username *entities.Username) bool {
+func UsernameExists(db *gorm.DB, username *entities.Username) bool {
 	err := db.Where("username = ?", username.ToString()).First(&models.User{}).Error
 
 	return err == nil
 }
 
-func saveUser(db *gorm.DB, entity *entities.User) *entities.User {
+func SaveUser(db *gorm.DB, entity *entities.User) {
 	db.Create(&models.User{
 		Username: entity.Username().ToString(),
 		Password: entity.Password().ToString(),
 	})
+}
 
+func FindUserByUsername(db *gorm.DB, username *entities.Username) *entities.User {
 	result := &models.User{}
 
-	db.Where("username = ?", entity.Username().ToString()).First(result)
+	db.Where("username = ?", username.ToString()).First(result)
 
 	return entities.NewUser(
 		entities.NewUsername(result.Username),

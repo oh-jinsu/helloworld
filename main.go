@@ -44,7 +44,7 @@ func main() {
 		DB:     db,
 	}
 
-	userModule.AddCreateUserController()
+	userModule.AddCreateUserUseCase()
 
 	mode := os.Getenv("MODE")
 
