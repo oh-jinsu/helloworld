@@ -93,7 +93,13 @@ func (mo *Module) AddCreateUserUseCase() {
 
 		models.SaveUser(mo.DB, user)
 
-		result := models.FindUserByUsername(mo.DB, username)
+		result, err := models.FindUserByUsername(mo.DB, username)
+
+		if err != nil {
+			common.AbortWithException(c, FailedToFindUserException())
+
+			return
+		}
 
 		c.JSON(http.StatusCreated, &CreateUserResponseBody{
 			Id:        result.Id(),

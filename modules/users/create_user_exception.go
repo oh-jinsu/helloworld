@@ -16,6 +16,7 @@ const (
 	TOO_SHORT_PASSWORD
 	TOO_LONG_PASSWORD
 	SPACE_CHARACTER_FOR_PASSWORD
+	FAILED_TO_FIND_USER
 )
 
 func ConflictUsernameException() common.Exception {
@@ -52,4 +53,8 @@ func TooLongPasswordException() common.Exception {
 
 func SpaceCharacterForPasswordException() common.Exception {
 	return common.NewError(http.StatusBadRequest, SPACE_CHARACTER_FOR_PASSWORD, "비밀번호에 공백을 입력할 수 없습니다.")
+}
+
+func FailedToFindUserException() common.Exception {
+	return common.NewError(http.StatusInternalServerError, FAILED_TO_FIND_USER, "저장한 유저를  찾지 못했습니다.")
 }

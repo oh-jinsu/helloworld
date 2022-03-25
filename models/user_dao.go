@@ -18,13 +18,15 @@ func SaveUser(db *gorm.DB, entity *entities.User) {
 	})
 }
 
-func FindUserByUsername(db *gorm.DB, username *entities.Username) *entities.User {
+func FindUserByUsername(db *gorm.DB, username *entities.Username) (*entities.User, error) {
 	result := &User{}
 
-	db.Where("username = ?", username.ToString()).First(result)
+	if err := db.Where("username = ?", username.ToString()).First(result).Error; err != nil {
+		return &entities.User{}, err
+	}
 
 	return entities.NewUser(
 		entities.NewUsername(result.Username),
 		entities.NewPassword(result.Password),
-	)
+	), nil
 }
