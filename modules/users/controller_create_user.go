@@ -2,11 +2,10 @@ package users
 
 import (
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/oh-jinsu/helloworld/models"
+	"github.com/oh-jinsu/helloworld/entities"
 	"github.com/oh-jinsu/helloworld/modules/common"
 )
 
@@ -31,78 +30,72 @@ func (mo *Module) AddCreateUserController() {
 			return
 		}
 
-		username := body.Username
+		username := entities.NewUsername(body.Username)
 
-		if matched, _ := regexp.MatchString("[ㄱ-ㅎ]", username); matched {
-			common.AbortWithException(c, KoreanCharacterException())
+		if username.HasKoreanConsonants() {
+			common.AbortWithException(c, KoreanConsonantsException())
 
 			return
 		}
 
-		if matched, _ := regexp.MatchString("[\\{\\}\\[\\]\\/?.,;:|\\)*~`!^\\-_+<>@\\#$%&\\\\\\=\\(\\'\"]", username); matched {
+		if username.HasSpecialCharacters() {
 			common.AbortWithException(c, SpecialCharacterException())
 
 			return
 		}
 
-		if matched, _ := regexp.MatchString("\\s", username); matched {
+		if username.HasSpaceCharacters() {
 			common.AbortWithException(c, SpaceCharacterForUsernameException())
 
 			return
 		}
 
-		koreanLength := len(regexp.MustCompile("[가-힣]").FindAllString(username, -1))
-
-		otherLength := len(regexp.MustCompile("[A-Za-z0-9]").FindAllString(username, -1))
-
-		if koreanLength*2+otherLength < 4 {
+		if username.IsTooShort() {
 			common.AbortWithException(c, TooShortUsernameException())
 
 			return
 		}
 
-		if koreanLength*2+otherLength > 16 {
+		if username.IsTooLong() {
 			common.AbortWithException(c, TooLongUsernameException())
 
 			return
 		}
 
-		password := body.Password
+		password := entities.NewPassword(body.Password)
 
-		if len(password) < 8 {
-			common.AbortWithException(c, TooShortPasswordException())
-
-			return
-		}
-
-		if len(password) > 24 {
-			common.AbortWithException(c, TooLongPasswordException())
-
-			return
-		}
-
-		if matched, _ := regexp.MatchString("\\s", password); matched {
+		if password.HasSpaceCharacters() {
 			common.AbortWithException(c, SpaceCharacterForPasswordException())
 
 			return
 		}
 
-		result := &models.User{}
+		if password.IsTooShort() {
+			common.AbortWithException(c, TooShortPasswordException())
 
-		if err := mo.DB.Where("username = ?", body.Username).First(result).Error; err == nil {
+			return
+		}
+
+		if password.IsTooLong() {
+			common.AbortWithException(c, TooLongPasswordException())
+
+			return
+		}
+
+		if usernameExists(mo.DB, username) {
 			common.AbortWithException(c, ConflictUsernameException())
 
 			return
 		}
 
-		mo.DB.Create(&models.User{Username: body.Username, Password: body.Password})
+		user := entities.NewUser(username, password)
 
-		mo.DB.Where("username = ?", body.Username).First(result)
+		result := saveUser(mo.DB, user)
 
 		c.JSON(http.StatusCreated, &CreateUserResponseBody{
-			Id:        result.ID,
-			Username:  result.Username,
-			CreatedAt: result.CreatedAt,
+			Id:        result.Id(),
+			Username:  result.Username().ToString(),
+			CreatedAt: result.CreatedAt(),
 		})
 	})
 }

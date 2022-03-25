@@ -8,7 +8,7 @@ import (
 
 const (
 	CONFLICT_USERNAME = 1001 + iota
-	KOREAN_CHARACTER
+	KOREAN_CONSONANTS
 	SPECIAL_CHARACTER
 	SPACE_CHARACTER_FOR_USERNAME
 	TOO_SHORT_USERNAME
@@ -22,8 +22,8 @@ func ConflictUsernameException() common.Exception {
 	return common.NewError(http.StatusConflict, CONFLICT_USERNAME, "이미 존재하는 이름입니다.")
 }
 
-func KoreanCharacterException() common.Exception {
-	return common.NewError(http.StatusBadRequest, KOREAN_CHARACTER, "이름에 한글 자음을 입력할 수 없습니다.")
+func KoreanConsonantsException() common.Exception {
+	return common.NewError(http.StatusBadRequest, KOREAN_CONSONANTS, "이름에 한글 자음만 입력할 수 없습니다.")
 }
 
 func SpecialCharacterException() common.Exception {
