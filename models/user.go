@@ -5,6 +5,12 @@ import (
 	"gorm.io/gorm"
 )
 
+type User struct {
+	gorm.Model
+	Username string
+	Password string
+}
+
 func UsernameExists(db *gorm.DB, username *entities.Username) bool {
 	err := db.Where("username = ?", username.ToString()).First(&User{}).Error
 
