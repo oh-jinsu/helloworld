@@ -1,4 +1,4 @@
-package users
+package auth
 
 import (
 	"net/http"
@@ -10,20 +10,20 @@ import (
 	"github.com/oh-jinsu/helloworld/modules/common"
 )
 
-type createUserRequestBody struct {
+type signUpRequestBody struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
-type CreateUserResponseBody struct {
+type SignUpResponseBody struct {
 	Id        uint      `json:"id"`
 	Username  string    `json:"username"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func (mo *Module) AddCreateUserUseCase() {
+func (mo *Module) AddSignUpUseCase() {
 	mo.Router.POST("", func(c *gin.Context) {
-		body := &createUserRequestBody{}
+		body := &signUpRequestBody{}
 
 		if err := c.ShouldBindJSON(body); err != nil {
 			common.AbortWithException(c, common.BadRequestException())
@@ -31,7 +31,7 @@ func (mo *Module) AddCreateUserUseCase() {
 			return
 		}
 
-		username := entities.NewUsername(body.Username)
+		username := &entities.Username{Value: body.Username}
 
 		if username.HasKoreanConsonants() {
 			common.AbortWithException(c, KoreanConsonantsException())
@@ -63,7 +63,7 @@ func (mo *Module) AddCreateUserUseCase() {
 			return
 		}
 
-		password := entities.NewPassword(body.Password)
+		password := &entities.Password{Value: body.Password}
 
 		if password.HasSpaceCharacters() {
 			common.AbortWithException(c, SpaceCharacterForPasswordException())
@@ -83,17 +83,17 @@ func (mo *Module) AddCreateUserUseCase() {
 			return
 		}
 
-		if models.UsernameExists(mo.DB, username) {
+		if models.UsernameExists(mo.Db, username) {
 			common.AbortWithException(c, ConflictUsernameException())
 
 			return
 		}
 
-		user := entities.NewUser(username, password)
+		user := &entities.User{Username: username, Password: password}
 
-		models.SaveUser(mo.DB, user)
+		models.SaveUser(mo.Db, user)
 
-		result, err := models.FindUserByUsername(mo.DB, username)
+		err := models.FindUser(mo.Db, user)
 
 		if err != nil {
 			common.AbortWithException(c, FailedToFindUserException())
@@ -101,10 +101,10 @@ func (mo *Module) AddCreateUserUseCase() {
 			return
 		}
 
-		c.JSON(http.StatusCreated, &CreateUserResponseBody{
-			Id:        result.Id(),
-			Username:  result.Username().ToString(),
-			CreatedAt: result.CreatedAt(),
+		c.JSON(http.StatusCreated, &SignUpResponseBody{
+			Id:        user.Id,
+			Username:  user.Username.ToString(),
+			CreatedAt: user.CreatedAt,
 		})
 	})
 }

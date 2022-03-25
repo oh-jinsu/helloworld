@@ -31,9 +31,11 @@ func (mo *Module) AddSignInUseCase() {
 			return
 		}
 
-		username := entities.NewUsername(body.Username)
+		username := &entities.Username{Value: body.Username}
 
-		user, err := models.FindUserByUsername(mo.Db, username)
+		user := &entities.User{Username: username}
+
+		err := models.FindUser(mo.Db, user)
 
 		if err != nil {
 			common.AbortWithException(c, UserNotFoundException())
@@ -41,15 +43,15 @@ func (mo *Module) AddSignInUseCase() {
 			return
 		}
 
-		password := entities.NewPassword(body.Password)
+		password := &entities.Password{Value: body.Password}
 
-		if !password.Equals(user.Password()) {
+		if !password.Equals(user.Password) {
 			common.AbortWithException(c, PasswordNotMatchedException())
 
 			return
 		}
 
-		accessToken, err := providers.IssueAccessToken(user.Id(), time.Minute*30)
+		accessToken, err := providers.IssueAccessToken(user.Id, time.Minute*30)
 
 		if err != nil {
 			common.AbortWithException(c, FailedToIssueAccessTokenException())
@@ -57,7 +59,7 @@ func (mo *Module) AddSignInUseCase() {
 			return
 		}
 
-		refreshToken, err := providers.IssueRefreshToken(user.Id(), time.Hour*24*365)
+		refreshToken, err := providers.IssueRefreshToken(user.Id, time.Hour*24*365)
 
 		if err != nil {
 			common.AbortWithException(c, FailedToIssueRefreshTokenException())

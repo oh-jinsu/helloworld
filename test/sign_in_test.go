@@ -9,7 +9,6 @@ import (
 
 	"github.com/oh-jinsu/helloworld/models"
 	"github.com/oh-jinsu/helloworld/modules/auth"
-	"github.com/oh-jinsu/helloworld/modules/users"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,17 +17,12 @@ func NewSignInTestClient(testDB *TestDB) *TestClient {
 
 	router := gin.New()
 
-	users := &users.Module{
-		Router: router.Group("users"),
-		DB:     testDB.instance,
-	}
-
-	users.AddCreateUserUseCase()
-
 	auth := &auth.Module{
 		Router: router.Group("auth"),
 		Db:     testDB.instance,
 	}
+
+	auth.AddSignUpUseCase()
 
 	auth.AddSignInUseCase()
 
@@ -51,7 +45,7 @@ func TestSignIn(t *testing.T) {
 		"password": "password",
 	}
 
-	res1, err := client.Request("users", http.MethodPost, reqBody1)
+	res1, err := client.Request("auth", http.MethodPost, reqBody1)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -76,7 +70,7 @@ func TestSignIn(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, res2.StatusCode)
 
-	assert.NotNil(t, resBody.AccessToken)
+	assert.NotEmpty(t, resBody.AccessToken)
 
-	assert.NotNil(t, resBody.RefreshToken)
+	assert.NotEmpty(t, resBody.RefreshToken)
 }

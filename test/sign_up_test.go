@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/oh-jinsu/helloworld/models"
-	"github.com/oh-jinsu/helloworld/modules/users"
+	"github.com/oh-jinsu/helloworld/modules/auth"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,12 +17,12 @@ func NewCreateUserTestClient(testDB *TestDB) *TestClient {
 
 	router := gin.New()
 
-	module := &users.Module{
-		Router: router.Group("users"),
-		DB:     testDB.instance,
+	module := &auth.Module{
+		Router: router.Group("auth"),
+		Db:     testDB.instance,
 	}
 
-	module.AddCreateUserUseCase()
+	module.AddSignUpUseCase()
 
 	client := CreateTestClient(router)
 
@@ -43,23 +43,23 @@ func TestCreateUser(t *testing.T) {
 		"password": "password",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	resBody := &users.CreateUserResponseBody{}
+	resBody := &auth.SignUpResponseBody{}
 
 	json.NewDecoder(res.Body).Decode(resBody)
 
 	assert.Equal(t, http.StatusCreated, res.StatusCode)
 
-	assert.NotNil(t, resBody.Id)
+	assert.NotEmpty(t, resBody.Id)
 
-	assert.NotNil(t, resBody.CreatedAt)
+	assert.NotEmpty(t, resBody.CreatedAt)
 
-	assert.Equal(t, "username", resBody.Username)
+	assert.NotEmpty(t, "username", resBody.Username)
 }
 
 func TestCreateUserWithTheSameName(t *testing.T) {
@@ -76,7 +76,7 @@ func TestCreateUserWithTheSameName(t *testing.T) {
 		"password": "password",
 	}
 
-	res1, err := client.Request("users", http.MethodPost, reqBody)
+	res1, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -84,7 +84,7 @@ func TestCreateUserWithTheSameName(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, res1.StatusCode)
 
-	res2, err := client.Request("users", http.MethodPost, reqBody)
+	res2, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -107,7 +107,7 @@ func TestCreateUserWithUsernameIncludingKoreanCharacter(t *testing.T) {
 		"password": "password",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -130,7 +130,7 @@ func TestCreateUserWithUsernameIncludingSpecialCharacter(t *testing.T) {
 		"password": "password",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -153,7 +153,7 @@ func TestCreateUserWithUsernameIncludingSpace(t *testing.T) {
 		"password": "password",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -176,7 +176,7 @@ func TestCreateUserWithTooShortEnglishUsername(t *testing.T) {
 		"password": "password",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -199,7 +199,7 @@ func TestCreateUserWithTooShortKoreanUsername(t *testing.T) {
 		"password": "password",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -222,7 +222,7 @@ func TestCreateUserWithTooLongEnglishUsername(t *testing.T) {
 		"password": "password",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -245,7 +245,7 @@ func TestCreateUserWithTooLongKoreanUsername(t *testing.T) {
 		"password": "password",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -268,7 +268,7 @@ func TestCreateUserWithTooShortPassword(t *testing.T) {
 		"password": "passwor",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -291,7 +291,7 @@ func TestCreateUserWithTooLongPassword(t *testing.T) {
 		"password": "passwordpasswordpasswordp",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -314,7 +314,7 @@ func TestCreateUserWithPasswordIncludingSpaceCharacter(t *testing.T) {
 		"password": "pass word",
 	}
 
-	res, err := client.Request("users", http.MethodPost, reqBody)
+	res, err := client.Request("auth", http.MethodPost, reqBody)
 
 	if err != nil {
 		t.Fatal(err.Error())

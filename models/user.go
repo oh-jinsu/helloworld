@@ -19,20 +19,23 @@ func UsernameExists(db *gorm.DB, username *entities.Username) bool {
 
 func SaveUser(db *gorm.DB, entity *entities.User) {
 	db.Create(&User{
-		Username: entity.Username().ToString(),
-		Password: entity.Password().ToString(),
+		Username: entity.Username.ToString(),
+		Password: entity.Password.ToString(),
 	})
 }
 
-func FindUserByUsername(db *gorm.DB, username *entities.Username) (*entities.User, error) {
+func FindUser(db *gorm.DB, user *entities.User) error {
 	result := &User{}
 
-	if err := db.Where("username = ?", username.ToString()).First(result).Error; err != nil {
-		return &entities.User{}, err
+	if err := db.Where("username = ?", user.Username.ToString()).First(result).Error; err != nil {
+		return err
 	}
 
-	return entities.NewUser(
-		entities.NewUsername(result.Username),
-		entities.NewPassword(result.Password),
-	), nil
+	user.Id = result.ID
+
+	user.Username = &entities.Username{Value: result.Username}
+	user.Password = &entities.Password{Value: result.Password}
+	user.CreatedAt = result.CreatedAt
+
+	return nil
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/oh-jinsu/helloworld/models"
 	"github.com/oh-jinsu/helloworld/modules/app"
 	"github.com/oh-jinsu/helloworld/modules/auth"
-	"github.com/oh-jinsu/helloworld/modules/users"
 )
 
 func main() {
@@ -45,14 +44,9 @@ func main() {
 		Db:     db,
 	}
 
+	auth.AddSignUpUseCase()
+
 	auth.AddSignInUseCase()
-
-	userModule := &users.Module{
-		Router: router.Group("users"),
-		DB:     db,
-	}
-
-	userModule.AddCreateUserUseCase()
 
 	mode := os.Getenv("MODE")
 
