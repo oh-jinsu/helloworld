@@ -48,6 +48,8 @@ func main() {
 
 	auth.AddSignInUseCase()
 
+	auth.AddRefreshUseCase()
+
 	mode := os.Getenv("MODE")
 
 	gin.SetMode(mode)

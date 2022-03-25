@@ -32,7 +32,7 @@ func (e *User) Password() *Password {
 	return e.password
 }
 
-func (e *User) RefreshTOken() string {
+func (e *User) RefreshToken() string {
 	return e.refreshToken
 }
 
@@ -41,5 +41,5 @@ func (e *User) CreatedAt() time.Time {
 }
 
 func (e *User) UpdateRefreshToken(refreshToken string) {
-
+	e.refreshToken = refreshToken
 }

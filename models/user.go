@@ -20,18 +20,36 @@ func UsernameExists(db *gorm.DB, username *entities.Username) bool {
 
 func PutUser(db *gorm.DB, user *entities.User) {
 	if user.Id() != 0 {
-		db.Save(&User{
+		db.Where("id = ?", user.Id()).Updates(&User{
 			Username:     user.Username().ToString(),
 			Password:     user.Password().ToString(),
-			RefreshToken: user.RefreshTOken(),
+			RefreshToken: user.RefreshToken(),
 		})
+
+		return
 	}
 
 	db.Create(&User{
 		Username:     user.Username().ToString(),
 		Password:     user.Password().ToString(),
-		RefreshToken: user.RefreshTOken(),
+		RefreshToken: user.RefreshToken(),
 	})
+}
+
+func FindUser(db *gorm.DB, userId uint) (*entities.User, error) {
+	result := &User{}
+
+	if err := db.Where("id = ?", userId).First(result).Error; err != nil {
+		return &entities.User{}, err
+	}
+
+	return entities.NewUser(
+		result.ID,
+		entities.NewUsername(result.Username),
+		entities.NewPassword(result.Password),
+		result.RefreshToken,
+		result.CreatedAt,
+	), nil
 }
 
 func FindUserByUsername(db *gorm.DB, username *entities.Username) (*entities.User, error) {
@@ -45,7 +63,7 @@ func FindUserByUsername(db *gorm.DB, username *entities.Username) (*entities.Use
 		result.ID,
 		entities.NewUsername(result.Username),
 		entities.NewPassword(result.Password),
-		"",
+		result.RefreshToken,
 		result.CreatedAt,
 	), nil
 }

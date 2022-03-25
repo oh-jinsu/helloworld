@@ -3,23 +3,38 @@ package providers
 import (
 	"errors"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/oh-jinsu/helloworld/entities"
 )
 
+func IssueAccessToken(claims *entities.Claims) (string, error) {
+	secret := []byte(os.Getenv("JWT_SECRET_ACCESS_TOKEN"))
+
+	return issueJwtToken(&secret, claims)
+}
+
+func IssueRefreshToken(claims *entities.Claims) (string, error) {
+	secret := []byte(os.Getenv("JWT_SECRET_REFRESH_TOKEN"))
+
+	return issueJwtToken(&secret, claims)
+}
+
 func issueJwtToken(secret *[]byte, claims *entities.Claims) (string, error) {
 	jwtClaims := jwt.MapClaims{}
 
-	jwtClaims["authorized"] = true
+	jwtClaims["sub"] = claims.Subject()
+
+	jwtClaims["aud"] = claims.Audience()
 
 	jwtClaims["iss"] = claims.Issuer()
 
-	jwtClaims["user_id"] = strconv.Itoa(int(claims.UserId()))
+	jwtClaims["user_id"] = claims.UserId()
 
 	jwtClaims["exp"] = claims.Expiration().Unix()
+
+	jwtClaims["iat"] = claims.IssuedAt().Unix()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims)
 
@@ -32,74 +47,103 @@ func issueJwtToken(secret *[]byte, claims *entities.Claims) (string, error) {
 	return result, nil
 }
 
-func extractClaims(token *jwt.Token) (*entities.Claims, error) {
-	if !token.Valid {
-		return &entities.Claims{}, nil
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-
-	if !ok {
-		return &entities.Claims{}, nil
-	}
-
-	userId, err := strconv.ParseUint(claims["user_id"].(string), 10, 32)
-
-	if err != nil {
-		return &entities.Claims{}, nil
-	}
-
-	issuer := claims["iss"].(string)
-
-	expiration, err := strconv.ParseInt(claims["exp"].(string), 10, 32)
-
-	if err != nil {
-		return &entities.Claims{}, nil
-	}
-
-	return entities.NewClaims(uint(userId), issuer, time.Unix(expiration, 0)), nil
-}
-
 func VerifyAccessToken(token string) (*entities.Claims, error) {
-	t, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("")
-		}
-
-		return []byte(os.Getenv("JWT_SECRET_ACCESS_TOKEN")), nil
-	})
-
-	if err != nil {
-		return &entities.Claims{}, nil
-	}
-
-	return extractClaims(t)
-}
-
-func IssueAccessToken(claims *entities.Claims) (string, error) {
-	secret := []byte(os.Getenv("JWT_SECRET_ACCESS_TOKEN"))
-
-	return issueJwtToken(&secret, claims)
+	return verifyToken(token, []byte(os.Getenv("JWT_SECRET_ACCESS_TOKEN")))
 }
 
 func VerifyRefreshToken(token string) (*entities.Claims, error) {
-	t, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("")
-		}
-
-		return []byte(os.Getenv("JWT_SECRET_REFRESH_TOKEN")), nil
-	})
-
-	if err != nil {
-		return &entities.Claims{}, nil
-	}
-
-	return extractClaims(t)
+	return verifyToken(token, []byte(os.Getenv("JWT_SECRET_REFRESH_TOKEN")))
 }
 
-func IssueRefreshToken(claims *entities.Claims) (string, error) {
-	secret := []byte(os.Getenv("JWT_SECRET_REFRESH_TOKEN"))
+func verifyToken(token string, secret []byte) (*entities.Claims, error) {
+	t, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("signing method is not matched")
+		}
 
-	return issueJwtToken(&secret, claims)
+		return secret, nil
+	})
+
+	if err != nil || !t.Valid {
+		return &entities.Claims{}, errors.New("given token is invalid")
+	}
+
+	claims, err := extractClaims(t)
+
+	if err != nil {
+		return &entities.Claims{}, err
+	}
+
+	ok := verifyClaims(claims)
+
+	if !ok {
+		return &entities.Claims{}, errors.New("given claims are dirty")
+	}
+
+	return claims, nil
+}
+
+func extractClaims(token *jwt.Token) (*entities.Claims, error) {
+	claims, ok := token.Claims.(jwt.MapClaims)
+
+	if !ok {
+		return &entities.Claims{}, errors.New("failed to cast claims")
+	}
+
+	subject, ok := claims["sub"].(string)
+
+	if !ok {
+		return &entities.Claims{}, errors.New("failed to cast claims")
+	}
+
+	audience, ok := claims["aud"].(string)
+
+	if !ok {
+		return &entities.Claims{}, errors.New("failed to cast claims")
+	}
+
+	userId, ok := claims["user_id"].(float64)
+
+	if !ok {
+		return &entities.Claims{}, errors.New("failed to cast claims")
+	}
+
+	issuer, ok := claims["iss"].(string)
+
+	if !ok {
+		return &entities.Claims{}, errors.New("failed to cast claims")
+	}
+
+	expiration, ok := claims["exp"].(float64)
+
+	if !ok {
+		return &entities.Claims{}, errors.New("failed to cast claims")
+	}
+
+	issuedAt := claims["iat"].(float64)
+
+	if !ok {
+		return &entities.Claims{}, errors.New("failed to cast claims")
+	}
+
+	return entities.CopyClaims(
+		subject,
+		audience,
+		uint(userId),
+		issuer,
+		time.Unix(int64(expiration), 0),
+		time.Unix(int64(issuedAt), 0),
+	), nil
+}
+
+func verifyClaims(claims *entities.Claims) bool {
+	if claims.Audience() != os.Getenv("JWT_AUDIENCE") {
+		return false
+	}
+
+	if claims.Issuer() != os.Getenv("JWT_ISSUER") {
+		return false
+	}
+
+	return true
 }

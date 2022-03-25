@@ -2,7 +2,6 @@ package auth
 
 import (
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -50,7 +49,11 @@ func (mo *Module) AddSignInUseCase() {
 			return
 		}
 
-		accessTokenClaims := entities.NewClaims(user.Id(), os.Getenv("JWT_ISSUER"), time.Now().Add(time.Minute*30))
+		accessTokenClaims := entities.NewClaims(
+			"access_token",
+			user.Id(),
+			time.Now().Add(time.Minute*30),
+		)
 
 		accessToken, err := providers.IssueAccessToken(accessTokenClaims)
 
@@ -60,7 +63,11 @@ func (mo *Module) AddSignInUseCase() {
 			return
 		}
 
-		refreshTokenClaims := entities.NewClaims(user.Id(), os.Getenv("JWT_ISSUER"), time.Now().Add(time.Hour*24*365))
+		refreshTokenClaims := entities.NewClaims(
+			"refresh_token",
+			user.Id(),
+			time.Now().Add(time.Hour*24*365),
+		)
 
 		refreshToken, err := providers.IssueRefreshToken(refreshTokenClaims)
 
@@ -73,6 +80,10 @@ func (mo *Module) AddSignInUseCase() {
 		user.UpdateRefreshToken(refreshToken)
 
 		models.PutUser(mo.Db, user)
+
+		us, _ := models.FindUser(mo.Db, user.Id())
+
+		println(us.RefreshToken())
 
 		c.JSON(http.StatusCreated, &SignInUseCaseResponseBody{
 			AccessToken:  accessToken,
