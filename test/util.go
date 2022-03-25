@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -25,6 +26,12 @@ func (d *TestDB) Close() {
 }
 
 func NewTestDB(dst ...interface{}) *TestDB {
+	err := godotenv.Load("../.env")
+
+	if err != nil {
+		panic("I failed to load the .env file")
+	}
+
 	dsn := os.Getenv("DSN_TEST")
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
