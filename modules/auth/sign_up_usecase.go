@@ -83,28 +83,22 @@ func (mo *Module) AddSignUpUseCase() {
 			return
 		}
 
-		if models.UsernameExists(mo.Db, username) {
+		if models.ExistsByUsername(mo.Db, username) {
 			common.AbortWithException(c, ConflictUsernameException())
 
 			return
 		}
 
-		user := entities.NewUserByUsernameAndPassword(username, password)
+		userId := models.NextUserId(mo.Db)
 
-		models.PutUser(mo.Db, user)
+		user := entities.NewUser(userId, username, password, "", time.Now())
 
-		result, err := models.FindUserByUsername(mo.Db, username)
-
-		if err != nil {
-			common.AbortWithException(c, FailedToFindUserException())
-
-			return
-		}
+		models.SaveUser(mo.Db, user)
 
 		c.JSON(http.StatusCreated, &SignUpResponseBody{
-			Id:        result.Id(),
-			Username:  result.Username().ToString(),
-			CreatedAt: result.CreatedAt(),
+			Id:        user.Id(),
+			Username:  user.Username().ToString(),
+			CreatedAt: user.CreatedAt(),
 		})
 	})
 }

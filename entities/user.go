@@ -12,10 +12,6 @@ type User struct {
 	createdAt    time.Time
 }
 
-func NewUserByUsernameAndPassword(username *Username, password *Password) *User {
-	return &User{username: username, password: password}
-}
-
 func NewUser(id uint, username *Username, password *Password, refreshToken string, createdAt time.Time) *User {
 	return &User{id, username, password, refreshToken, createdAt}
 }

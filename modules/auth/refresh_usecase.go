@@ -37,7 +37,7 @@ func (mo *Module) AddRefreshUseCase() {
 			return
 		}
 
-		user, err := models.FindUser(mo.Db, claims.UserId())
+		user, err := models.FindUserById(mo.Db, claims.UserId())
 
 		if err != nil {
 			common.AbortWithException(c, UserNotFoundException())

@@ -79,11 +79,7 @@ func (mo *Module) AddSignInUseCase() {
 
 		user.UpdateRefreshToken(refreshToken)
 
-		models.PutUser(mo.Db, user)
-
-		us, _ := models.FindUser(mo.Db, user.Id())
-
-		println(us.RefreshToken())
+		models.SaveUser(mo.Db, user)
 
 		c.JSON(http.StatusCreated, &SignInUseCaseResponseBody{
 			AccessToken:  accessToken,

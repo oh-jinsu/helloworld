@@ -1,50 +1,55 @@
 package models
 
 import (
+	"time"
+
 	"github.com/oh-jinsu/helloworld/entities"
 	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
+	Id           uint `gorm:"primaryKey"`
 	Username     string
 	Password     string
 	RefreshToken string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }
 
-func UsernameExists(db *gorm.DB, username *entities.Username) bool {
+func NextUserId(db *gorm.DB) uint {
+	user := &User{}
+
+	db.Last(user)
+
+	return user.Id + 1
+}
+
+func ExistsByUsername(db *gorm.DB, username *entities.Username) bool {
 	err := db.Where("username = ?", username.ToString()).First(&User{}).Error
 
 	return err == nil
 }
 
-func PutUser(db *gorm.DB, user *entities.User) {
-	if user.Id() != 0 {
-		db.Where("id = ?", user.Id()).Updates(&User{
-			Username:     user.Username().ToString(),
-			Password:     user.Password().ToString(),
-			RefreshToken: user.RefreshToken(),
-		})
-
-		return
-	}
-
-	db.Create(&User{
+func SaveUser(db *gorm.DB, user *entities.User) {
+	db.Save(&User{
+		Id:           user.Id(),
 		Username:     user.Username().ToString(),
 		Password:     user.Password().ToString(),
 		RefreshToken: user.RefreshToken(),
+		CreatedAt:    user.CreatedAt(),
 	})
 }
 
-func FindUser(db *gorm.DB, userId uint) (*entities.User, error) {
+func FindUserById(db *gorm.DB, id uint) (*entities.User, error) {
 	result := &User{}
 
-	if err := db.Where("id = ?", userId).First(result).Error; err != nil {
+	if err := db.Where("id = ?", id).First(result).Error; err != nil {
 		return &entities.User{}, err
 	}
 
 	return entities.NewUser(
-		result.ID,
+		result.Id,
 		entities.NewUsername(result.Username),
 		entities.NewPassword(result.Password),
 		result.RefreshToken,
@@ -60,7 +65,7 @@ func FindUserByUsername(db *gorm.DB, username *entities.Username) (*entities.Use
 	}
 
 	return entities.NewUser(
-		result.ID,
+		result.Id,
 		entities.NewUsername(result.Username),
 		entities.NewPassword(result.Password),
 		result.RefreshToken,
