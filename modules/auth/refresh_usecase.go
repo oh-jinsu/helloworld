@@ -24,7 +24,7 @@ func (mo *Module) AddRefreshUseCase() {
 		body := &refreshUseCaseRequestBody{}
 
 		if err := c.ShouldBindJSON(body); err != nil {
-			common.AbortWithException(c, common.BadRequestException())
+			c.AbortWithStatusJSON(http.StatusBadRequest, common.BadRequestExceptionResponse())
 
 			return
 		}
@@ -32,7 +32,7 @@ func (mo *Module) AddRefreshUseCase() {
 		claims, err := providers.VerifyRefreshToken(body.RefreshToken)
 
 		if err != nil {
-			common.AbortWithException(c, InvalidRefreshTokenException())
+			c.AbortWithStatusJSON(http.StatusUnauthorized, common.NewExceptionResponse(refreshExceptionCode+1, "유효하지 않은 인증 정보입니다"))
 
 			return
 		}
@@ -40,13 +40,13 @@ func (mo *Module) AddRefreshUseCase() {
 		user, err := models.FindUserById(mo.Db, claims.UserId())
 
 		if err != nil {
-			common.AbortWithException(c, UserNotFoundException())
+			c.AbortWithStatusJSON(http.StatusInternalServerError, common.NewExceptionResponse(refreshExceptionCode+2, "이용자를 찾지 못했습니다"))
 
 			return
 		}
 
 		if user.RefreshToken() != body.RefreshToken {
-			common.AbortWithException(c, DiscardedRefreshTokenException())
+			c.AbortWithStatusJSON(http.StatusUnauthorized, common.NewExceptionResponse(refreshExceptionCode+3, "이미 폐기된 인증 정보입니다"))
 
 			return
 		}
@@ -60,7 +60,7 @@ func (mo *Module) AddRefreshUseCase() {
 		accessToken, err := providers.IssueAccessToken(accessTokenClaims)
 
 		if err != nil {
-			common.AbortWithException(c, FailedToIssueAccessTokenException())
+			c.AbortWithStatusJSON(http.StatusInternalServerError, common.NewExceptionResponse(refreshExceptionCode+4, "인증 정보를 발급하지 못했습니다"))
 
 			return
 		}

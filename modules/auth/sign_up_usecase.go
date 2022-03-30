@@ -26,72 +26,40 @@ func (mo *Module) AddSignUpUseCase() {
 		body := &signUpRequestBody{}
 
 		if err := c.ShouldBindJSON(body); err != nil {
-			common.AbortWithException(c, common.BadRequestException())
+			c.AbortWithStatusJSON(http.StatusBadRequest, common.BadRequestExceptionResponse())
 
 			return
 		}
 
-		username := entities.NewUsername(body.Username)
+		username, exception := entities.NewUsername(body.Username)
 
-		if username.HasKoreanConsonants() {
-			common.AbortWithException(c, KoreanConsonantsException())
-
-			return
-		}
-
-		if username.HasSpecialCharacters() {
-			common.AbortWithException(c, SpecialCharacterException())
+		if exception.Occured() {
+			c.AbortWithStatusJSON(http.StatusBadRequest, common.NewExceptionResponse(signUpExceptionCode+1, exception.Message()))
 
 			return
 		}
 
-		if username.HasSpaceCharacters() {
-			common.AbortWithException(c, SpaceCharacterForUsernameException())
+		password, exception := entities.NewPassword(body.Password)
 
-			return
-		}
-
-		if username.IsTooShort() {
-			common.AbortWithException(c, TooShortUsernameException())
-
-			return
-		}
-
-		if username.IsTooLong() {
-			common.AbortWithException(c, TooLongUsernameException())
-
-			return
-		}
-
-		password := entities.NewPassword(body.Password)
-
-		if password.HasSpaceCharacters() {
-			common.AbortWithException(c, SpaceCharacterForPasswordException())
-
-			return
-		}
-
-		if password.IsTooShort() {
-			common.AbortWithException(c, TooShortPasswordException())
-
-			return
-		}
-
-		if password.IsTooLong() {
-			common.AbortWithException(c, TooLongPasswordException())
+		if exception.Occured() {
+			c.AbortWithStatusJSON(http.StatusBadRequest, common.NewExceptionResponse(signUpExceptionCode+2, exception.Message()))
 
 			return
 		}
 
 		if models.ExistsByUsername(mo.Db, username) {
-			common.AbortWithException(c, ConflictUsernameException())
+			c.AbortWithStatusJSON(http.StatusConflict, common.NewExceptionResponse(signUpExceptionCode+3, "인증 정보를 발급하지 못했습니다"))
 
 			return
 		}
 
 		userId := models.NextUserId(mo.Db)
 
-		user := entities.NewUser(userId, username, password, "", time.Now())
+		user, exception := entities.NewUser(userId, username, password)
+
+		if exception.Occured() {
+			c.AbortWithStatusJSON(http.StatusBadRequest, common.NewExceptionResponse(signUpExceptionCode+4, exception.Message()))
+		}
 
 		models.SaveUser(mo.Db, user)
 

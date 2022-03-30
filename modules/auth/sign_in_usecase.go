@@ -26,53 +26,57 @@ func (mo *Module) AddSignInUseCase() {
 		body := &signInUseCaseRequestBody{}
 
 		if err := c.ShouldBindJSON(body); err != nil {
-			common.AbortWithException(c, common.BadRequestException())
+			c.AbortWithStatusJSON(http.StatusBadRequest, common.BadRequestExceptionResponse())
 
 			return
 		}
 
-		username := entities.NewUsername(body.Username)
+		username, exception := entities.NewUsername(body.Username)
+
+		if exception.Occured() {
+			c.AbortWithStatusJSON(http.StatusBadRequest, common.NewExceptionResponse(signInExceptionCode+1, exception.Message()))
+
+			return
+		}
 
 		user, err := models.FindUserByUsername(mo.Db, username)
 
 		if err != nil {
-			common.AbortWithException(c, UserNotFoundException())
+			c.AbortWithStatusJSON(http.StatusNotFound, common.NewExceptionResponse(signInExceptionCode+2, "이용자를 찾지 못했습니다"))
 
 			return
 		}
 
-		password := entities.NewPassword(body.Password)
+		password, exception := entities.NewPassword(body.Password)
+
+		if exception.Occured() {
+			c.AbortWithStatusJSON(http.StatusBadRequest, common.NewExceptionResponse(signInExceptionCode+2, exception.Message()))
+
+			return
+		}
 
 		if !password.Equals(user.Password()) {
-			common.AbortWithException(c, PasswordNotMatchedException())
+			c.AbortWithStatusJSON(http.StatusUnauthorized, common.NewExceptionResponse(signInExceptionCode+3, "비밀번호가 틀립니다"))
 
 			return
 		}
 
-		accessTokenClaims := entities.NewClaims(
-			"access_token",
-			user.Id(),
-			time.Now().Add(time.Minute*30),
-		)
+		accessTokenClaims := entities.NewClaims("access_token", user.Id(), time.Now().Add(time.Minute*30))
 
 		accessToken, err := providers.IssueAccessToken(accessTokenClaims)
 
 		if err != nil {
-			common.AbortWithException(c, FailedToIssueAccessTokenException())
+			c.AbortWithStatusJSON(http.StatusInternalServerError, common.NewExceptionResponse(signInExceptionCode+4, "인증 정보를 발급하지 못했습니다"))
 
 			return
 		}
 
-		refreshTokenClaims := entities.NewClaims(
-			"refresh_token",
-			user.Id(),
-			time.Now().Add(time.Hour*24*365),
-		)
+		refreshTokenClaims := entities.NewClaims("refresh_token", user.Id(), time.Now().Add(time.Hour*24*365))
 
 		refreshToken, err := providers.IssueRefreshToken(refreshTokenClaims)
 
 		if err != nil {
-			common.AbortWithException(c, FailedToIssueRefreshTokenException())
+			c.AbortWithStatusJSON(http.StatusInternalServerError, common.NewExceptionResponse(signInExceptionCode+5, "인증 정보를 발급하지 못했습니다"))
 
 			return
 		}

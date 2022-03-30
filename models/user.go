@@ -48,10 +48,10 @@ func FindUserById(db *gorm.DB, id uint) (*entities.User, error) {
 		return &entities.User{}, err
 	}
 
-	return entities.NewUser(
+	return entities.CopyUser(
 		result.Id,
-		entities.NewUsername(result.Username),
-		entities.NewPassword(result.Password),
+		entities.CopyUsername(result.Username),
+		entities.CopyPassword(result.Password),
 		result.RefreshToken,
 		result.CreatedAt,
 	), nil
@@ -64,10 +64,10 @@ func FindUserByUsername(db *gorm.DB, username *entities.Username) (*entities.Use
 		return &entities.User{}, err
 	}
 
-	return entities.NewUser(
+	return entities.CopyUser(
 		result.Id,
-		entities.NewUsername(result.Username),
-		entities.NewPassword(result.Password),
+		entities.CopyUsername(result.Username),
+		entities.CopyPassword(result.Password),
 		result.RefreshToken,
 		result.CreatedAt,
 	), nil

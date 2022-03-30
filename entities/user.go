@@ -12,7 +12,11 @@ type User struct {
 	createdAt    time.Time
 }
 
-func NewUser(id uint, username *Username, password *Password, refreshToken string, createdAt time.Time) *User {
+func NewUser(id uint, username *Username, password *Password) (*User, *Exception) {
+	return &User{id, username, password, "", time.Now()}, NewException(nil)
+}
+
+func CopyUser(id uint, username *Username, password *Password, refreshToken string, createdAt time.Time) *User {
 	return &User{id, username, password, refreshToken, createdAt}
 }
 
