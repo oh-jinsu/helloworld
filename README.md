@@ -1,2 +1,2 @@
 # Helloworld
-Helloworld is a fantastic world where adventurers gather from everywhere.
+An authentication server written in the domain-driven-design.
